@@ -9,31 +9,29 @@ type TokenBucket struct {
 	tokens   chan struct{}
 	ticker   *time.Ticker
 	capacity uint64
-	q        chan bool
+	quit     chan bool
 }
 
 func (t *TokenBucket) Take() bool {
 	select {
-		case _, ok := <-t.tokens:{ return ok }
+		case _, ok := <-t.tokens: return ok
 		default: return false
 	}
 }
 
 func (t *TokenBucket) Wait() {
-	for !t.Take() {
-		time.Sleep(time.Millisecond)
-	}
+	<- t.tokens
 }
 
 func (t *TokenBucket) Close() {
-	close(t.q)
+	close(t.quit)
 }
 
 func (t *TokenBucket) fillTokens() {
 	toFillNum := atomic.LoadUint64(&t.capacity) - uint64(len(t.tokens))
 	for toFillNum != 0 {
 		select {
-			case t.tokens <- struct{}{}:{ toFillNum-- }
+			case t.tokens <- struct{}{}: toFillNum--
 			default: return
 		}
 	}
@@ -48,7 +46,7 @@ func NewTokenBucket(fillInterval time.Duration, capacity uint64) *TokenBucket {
 		panic("capacity must > 0")
 	}
 
-	tokenBucket := &TokenBucket{tokens: make(chan struct{}, capacity), ticker: time.NewTicker(fillInterval), capacity: capacity, q: make(chan bool)}
+	tokenBucket := &TokenBucket{tokens: make(chan struct{}, capacity), ticker: time.NewTicker(fillInterval), capacity: capacity, quit: make(chan bool)}
 	tokenBucket.fillTokens()
 
 	go func(t *TokenBucket) {
@@ -57,7 +55,7 @@ func NewTokenBucket(fillInterval time.Duration, capacity uint64) *TokenBucket {
 			case <-t.ticker.C: {
 				t.fillTokens()
 			}
-			case _, available := <-t.q: {
+			case _, available := <-t.quit: {
 				if !available {
 					return
 				}
