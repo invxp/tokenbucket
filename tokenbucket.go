@@ -45,7 +45,7 @@ func NewTokenBucket(fillInterval time.Duration, capacity uint64) *TokenBucket {
 		panic("capacity must > 0")
 	}
 
-	tokenBucket := &TokenBucket{tokens: make(chan struct{}, capacity), ticker: time.NewTicker(fillInterval), capacity: capacity, quit: make(chan bool)}
+	tokenBucket := &TokenBucket{tokens: make(chan struct{}, capacity), ticker: time.NewTicker(fillInterval), capacity: capacity}
 	tokenBucket.fillTokens()
 
 	go func(t *TokenBucket) {
