@@ -9,7 +9,6 @@ type TokenBucket struct {
 	tokens   chan struct{}
 	ticker   *time.Ticker
 	capacity uint64
-	quit     chan bool
 }
 
 func (t *TokenBucket) Take() bool {
@@ -24,7 +23,7 @@ func (t *TokenBucket) Wait() {
 }
 
 func (t *TokenBucket) Close() {
-	close(t.quit)
+	t.ticker.Stop()
 }
 
 func (t *TokenBucket) fillTokens() {
@@ -50,18 +49,8 @@ func NewTokenBucket(fillInterval time.Duration, capacity uint64) *TokenBucket {
 	tokenBucket.fillTokens()
 
 	go func(t *TokenBucket) {
-		for {
-			select {
-			case <-t.ticker.C: {
-				t.fillTokens()
-			}
-			case _, available := <-t.quit: {
-				if !available {
-					return
-				}
-				t.ticker.Stop()
-			}
-			}
+		for range t.ticker.C {
+			t.fillTokens()
 		}
 	}(tokenBucket)
 
