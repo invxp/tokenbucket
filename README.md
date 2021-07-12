@@ -23,10 +23,10 @@ func TestTokenBucketWait(t *testing.T) {
     //新建一个令牌桶,每秒最大1000个(QPS=1000)
     tokenBucket := NewTokenBucket(time.Second, 1000)
 
-    //拿一个令牌,如果没有则会阻塞,直到拿到为止
+    //拿一个令牌,如果没有则会阻塞,否则返回剩余个数
     tokenBucket.Wait()
     
-    //拿一个令牌,如果没有返回false
+    //拿一个令牌,如果失败返回的剩余个数为0
     tokenBucket.Take()
 
     //关闭(主要是把内部的定时器停掉)
