@@ -20,21 +20,17 @@
 ```go
 
 func TestTokenBucketWait(t *testing.T) {
-    tokenBucket := NewTokenBucket(time.Second, 1000)
     //新建一个令牌桶,每秒最大1000个(QPS=1000)
+    tokenBucket := NewTokenBucket(time.Second, 1000)
 
+    //拿一个令牌,如果没有则会阻塞,直到拿到为止
     tokenBucket.Wait()
-	//拿一个令牌,如果没有则会阻塞,直到拿到为止
-
-    tokenBucket.Take()
-    //拿一个令牌,如果没有返回false
-
-    tokenBucket.Rate()
-    //查看当前速率
     
-    tokenBucket.Close()
-    //关闭(主要是把内部的定时器停掉)
+    //拿一个令牌,如果没有返回false
+    tokenBucket.Take()
 
+    //关闭(主要是把内部的定时器停掉)
+    tokenBucket.Close()
 }
 
 ```
