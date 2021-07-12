@@ -8,18 +8,27 @@ import (
 type TokenBucket struct {
 	tokens   chan struct{}
 	ticker   *time.Ticker
-	capacity uint64
+	capacity uint32
 }
 
-func (t *TokenBucket) Take() bool {
+func (t *TokenBucket) SetCapacity(num uint32) {
+	atomic.StoreUint32(&t.capacity, num)
+}
+
+func (t *TokenBucket) Capacity() uint32 {
+	return atomic.LoadUint32(&t.capacity)
+}
+
+func (t *TokenBucket) Take() int {
 	select {
-		case _, ok := <-t.tokens: return ok
-		default: return false
+		case _, ok := <-t.tokens: if ok {return len(t.tokens)}; return 0
+		default: return 0
 	}
 }
 
-func (t *TokenBucket) Wait() {
+func (t *TokenBucket) Wait() int {
 	<- t.tokens
+	return len(t.tokens)
 }
 
 func (t *TokenBucket) Close() {
@@ -27,7 +36,7 @@ func (t *TokenBucket) Close() {
 }
 
 func (t *TokenBucket) fillTokens() {
-	toFillNum := atomic.LoadUint64(&t.capacity) - uint64(len(t.tokens))
+	toFillNum := atomic.LoadUint32(&t.capacity) - uint32(len(t.tokens))
 	for toFillNum != 0 {
 		select {
 			case t.tokens <- struct{}{}: toFillNum--
@@ -36,7 +45,7 @@ func (t *TokenBucket) fillTokens() {
 	}
 }
 
-func NewTokenBucket(fillInterval time.Duration, capacity uint64) *TokenBucket {
+func NewTokenBucket(fillInterval time.Duration, capacity uint32) *TokenBucket {
 	if fillInterval <= 0 {
 		panic("fill interval must > 0")
 	}

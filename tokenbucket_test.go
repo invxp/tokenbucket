@@ -10,8 +10,8 @@ func TestTokenBucketWait(t *testing.T) {
 
 	for {
 		last := time.Now()
-		tokenBucket.Wait()
-		t.Log("WAIT:", time.Since(last))
+		left := tokenBucket.Wait()
+		t.Log("WAIT:", time.Since(last), left)
 	}
 }
 
